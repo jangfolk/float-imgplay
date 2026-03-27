@@ -1,6 +1,7 @@
 {
   "name": "float-imgplay",
   "version": "1.0.0",
+  "type": "module",
   "description": "Image-to-sound player. Scans pixel data and generates rule-based music via Web Audio API.",
   "main": "dist/float-imgplay.umd.js",
   "module": "dist/float-imgplay.esm.js",
