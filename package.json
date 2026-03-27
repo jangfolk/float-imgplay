@@ -1,0 +1,48 @@
+{
+  "name": "float-imgplay",
+  "version": "1.0.0",
+  "description": "Image-to-sound player. Scans pixel data and generates rule-based music via Web Audio API.",
+  "main": "dist/float-imgplay.umd.js",
+  "module": "dist/float-imgplay.esm.js",
+  "browser": "dist/float-imgplay.iife.min.js",
+  "unpkg": "dist/float-imgplay.iife.min.js",
+  "jsdelivr": "dist/float-imgplay.iife.min.js",
+  "exports": {
+    ".": {
+      "import": "./dist/float-imgplay.esm.js",
+      "require": "./dist/float-imgplay.umd.js",
+      "default": "./dist/float-imgplay.iife.min.js"
+    },
+    "./css": "./dist/float-imgplay.css"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "image",
+    "audio",
+    "sound",
+    "web-audio",
+    "pixel",
+    "music",
+    "generative",
+    "player"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "@rollup/plugin-terser": "^0.4.0",
+    "rollup-plugin-copy": "^3.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/user/float-imgplay.git"
+  }
+}
