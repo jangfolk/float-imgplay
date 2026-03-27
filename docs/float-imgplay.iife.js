@@ -744,7 +744,7 @@ var FloatImgPlay = (function (exports) {
 
       // Scale canvas resolution with image size (bigger image = more detail)
       const maxDim = Math.max(origW, origH);
-      const maxSize = clamp(Math.round(maxDim / 3), 32, 256);
+      const maxSize = clamp(Math.round(maxDim / 2), 64, 512);
 
       let w = origW;
       let h = origH;
@@ -772,7 +772,7 @@ var FloatImgPlay = (function (exports) {
         : charToKey((fileName?.[0] || "c").toLowerCase());
 
       // Scale sample columns with image width (bigger image = more notes = longer sound)
-      const dynamicColumns = clamp(Math.round(origW / 6), 12, 128);
+      const dynamicColumns = clamp(Math.round(origW / 3), 24, 256);
       const columns_count = audioOpts.sampleColumns || dynamicColumns;
 
       const rows = (audioOpts.sampleRows || [0.25, 0.5, 0.75])
@@ -3324,7 +3324,7 @@ var FloatImgPlay = (function (exports) {
         { key: "attack", label: "Attack", type: "range", min: 0.001, max: 0.5, step: 0.001 },
         { key: "release", label: "Release", type: "range", min: 0.001, max: 0.5, step: 0.001 },
         { key: "noteDurationBeats", label: "Note Dur", type: "range", min: 0.1, max: 2, step: 0.05 },
-        { key: "sampleColumns", label: "Columns", type: "range", min: 0, max: 128, step: 1 },
+        { key: "sampleColumns", label: "Columns", type: "range", min: 0, max: 256, step: 1 },
         { key: "restThreshold", label: "Rest Thresh", type: "range", min: 0, max: 128, step: 1 },
         { key: "brightDuration", label: "Bright Dur", type: "range", min: 0.05, max: 1, step: 0.01 },
         { key: "blueDuration", label: "Blue Dur", type: "range", min: 0.05, max: 1, step: 0.01 },

@@ -168,7 +168,7 @@ export class ImageEngine {
 
     // Scale canvas resolution with image size (bigger image = more detail)
     const maxDim = Math.max(origW, origH);
-    const maxSize = clamp(Math.round(maxDim / 3), 32, 256);
+    const maxSize = clamp(Math.round(maxDim / 2), 64, 512);
 
     let w = origW;
     let h = origH;
@@ -196,7 +196,7 @@ export class ImageEngine {
       : charToKey((fileName?.[0] || "c").toLowerCase());
 
     // Scale sample columns with image width (bigger image = more notes = longer sound)
-    const dynamicColumns = clamp(Math.round(origW / 6), 12, 128);
+    const dynamicColumns = clamp(Math.round(origW / 3), 24, 256);
     const columns_count = audioOpts.sampleColumns || dynamicColumns;
 
     const rows = (audioOpts.sampleRows || [0.25, 0.5, 0.75])

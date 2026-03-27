@@ -1012,7 +1012,7 @@ export class FloatImgPlay {
       { key: "attack", label: "Attack", type: "range", min: 0.001, max: 0.5, step: 0.001 },
       { key: "release", label: "Release", type: "range", min: 0.001, max: 0.5, step: 0.001 },
       { key: "noteDurationBeats", label: "Note Dur", type: "range", min: 0.1, max: 2, step: 0.05 },
-      { key: "sampleColumns", label: "Columns", type: "range", min: 0, max: 128, step: 1 },
+      { key: "sampleColumns", label: "Columns", type: "range", min: 0, max: 256, step: 1 },
       { key: "restThreshold", label: "Rest Thresh", type: "range", min: 0, max: 128, step: 1 },
       { key: "brightDuration", label: "Bright Dur", type: "range", min: 0.05, max: 1, step: 0.01 },
       { key: "blueDuration", label: "Blue Dur", type: "range", min: 0.05, max: 1, step: 0.01 },
