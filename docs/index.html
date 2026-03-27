@@ -6,6 +6,7 @@
   <title>Float:ImgPlay - Demo</title>
   <link rel="stylesheet" href="float-imgplay.css">
   <style>
+    html { scroll-behavior: smooth; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -190,6 +191,47 @@
       border-color: #6c5ce7;
     }
 
+    /* --- Sticky Nav --- */
+    .top-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 999;
+      background: rgba(15,15,26,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid #1e1e35;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      transition: box-shadow 0.2s;
+    }
+    .top-nav.scrolled { box-shadow: 0 2px 20px rgba(0,0,0,0.5); }
+    .top-nav-inner {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      max-width: 960px;
+      width: 100%;
+      padding: 0 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .top-nav-inner::-webkit-scrollbar { display: none; }
+    .nav-link {
+      padding: 10px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color 0.15s;
+      border-bottom: 2px solid transparent;
+      font-family: inherit;
+    }
+    .nav-link:hover { color: #bbb; }
+    .nav-link.active { color: #fff; border-bottom-color: #6c5ce7; }
+    body { padding-top: 52px; }
+
     /* --- Upload --- */
     .upload-zone {
       border: 2px dashed #2a2a3e; border-radius: 12px; padding: 40px;
@@ -212,6 +254,18 @@
 </head>
 <body>
 
+  <nav class="top-nav" id="top-nav">
+    <div class="top-nav-inner">
+      <a class="nav-link active" href="#sec-demo">Demo</a>
+      <a class="nav-link" href="#sec-upload">Upload</a>
+      <a class="nav-link" href="#sec-embed">Embed MIDI</a>
+      <a class="nav-link" href="#sec-settings">Settings</a>
+      <a class="nav-link" href="#sec-api">API</a>
+      <a class="nav-link" href="#sec-code">Code</a>
+      <a class="nav-link" href="#sec-options">Options</a>
+    </div>
+  </nav>
+
   <h1>Float:ImgPlay</h1>
   <p class="subtitle">Image-to-sound player &mdash; Scans pixel data and generates rule-based music via Web Audio API</p>
   <p style="text-align:center; margin-bottom:48px;"><a href="https://github.com/float1122/float-imgplay" target="_blank" rel="noopener" style="color:#6c5ce7; font-size:13px; text-decoration:none;">GitHub Repository &rarr;</a></p>
@@ -219,7 +273,7 @@
   <div class="container">
 
     <!-- ============ LIVE DEMO ============ -->
-    <div class="section">
+    <div class="section" id="sec-demo">
       <h2>Live Demo <span>10 images with different UI control combinations</span></h2>
       <div class="mixer-strip">
         <div class="mixer-row">
@@ -272,11 +326,22 @@
             <button class="mixer-pill" data-algorithm="spectral">Spectral</button>
             <button class="mixer-pill" data-algorithm="contour">Contour</button>
             <button class="mixer-pill" data-algorithm="harmonic-drift">Harmonic Drift</button>
+            <button class="mixer-pill" data-algorithm="color-pitch">Color Pitch</button>
           </div>
         </div>
-        <div style="display:flex; gap:8px; margin-top:8px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-top:10px; flex-wrap:wrap;">
           <button class="btn btn-primary" id="btn-play-all" style="padding:5px 14px; font-size:11px;">Play All</button>
           <button class="btn btn-danger" id="btn-stop-all-demo" style="padding:5px 14px; font-size:11px;">Stop All</button>
+          <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
+            <span style="font-size:9px; color:#555; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">BPM</span>
+            <input type="range" id="mixer-tempo" min="40" max="240" step="1" value="100" style="width:90px; height:14px; accent-color:#6c5ce7;">
+            <span id="mixer-tempo-val" style="font-size:10px; color:#888; min-width:24px;">100</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <span style="font-size:9px; color:#555; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">VOL</span>
+            <input type="range" id="mixer-volume" min="0" max="1" step="0.01" value="0.25" style="width:70px; height:14px; accent-color:#6c5ce7;">
+            <span id="mixer-volume-val" style="font-size:10px; color:#888; min-width:24px;">25%</span>
+          </div>
         </div>
       </div>
       <div class="grid" id="demo-grid" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));">
@@ -345,7 +410,7 @@
 
 
     <!-- ============ UPLOAD IMAGE ============ -->
-    <div class="section">
+    <div class="section" id="sec-upload">
       <h2>Upload Image <span>Drop or select your own image to play</span></h2>
       <div class="upload-zone" id="upload-zone">
         <div class="upload-icon">&#128444;</div>
@@ -403,7 +468,7 @@
     </div>
 
     <!-- ============ EMBED MIDI INTO IMAGE ============ -->
-    <div class="section">
+    <div class="section" id="sec-embed">
       <h2>Embed MIDI into Image <span>Combine PNG + MIDI into one playable image file</span></h2>
       <div class="embed-panel" style="background:#16162a; border:1px solid #2a2a3e; border-radius:12px; padding:24px;">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
@@ -436,7 +501,7 @@
     </div>
 
     <!-- ============ SETTINGS PANEL ============ -->
-    <div class="section">
+    <div class="section" id="sec-settings">
       <h2>Settings <span>Change options and click "Apply" to reinitialize</span></h2>
 
       <!-- General Options -->
@@ -680,7 +745,7 @@
     </div>
 
     <!-- ============ API DEMO ============ -->
-    <div class="section">
+    <div class="section" id="sec-api">
       <h2>API Methods</h2>
       <div class="api-demo">
         <h3>Try the API</h3>
@@ -710,7 +775,7 @@
     </div>
 
     <!-- ============ CODE EXAMPLES ============ -->
-    <div class="section">
+    <div class="section" id="sec-code">
       <h2>Code Examples</h2>
 
       <div class="tabs">
@@ -916,7 +981,7 @@ securePlayer.<span class="fn">init</span>();
     </div>
 
     <!-- ============ ALL OPTIONS REFERENCE ============ -->
-    <div class="section">
+    <div class="section" id="sec-options">
       <h2>Full Options Reference</h2>
       <div class="code-block">
         <button class="copy-btn" data-target="full-opts">Copy</button>
@@ -1273,6 +1338,27 @@ securePlayer.<span class="fn">init</span>();
       if (player) player.stopAll();
     });
 
+    // --- Mixer tempo/volume ---
+    document.getElementById('mixer-tempo').addEventListener('input', function() {
+      var val = parseInt(this.value, 10);
+      document.getElementById('mixer-tempo-val').textContent = val;
+      document.getElementById('opt-tempo').value = val;
+      document.getElementById('val-tempo').textContent = val;
+      hotSwapSettings();
+    });
+    document.getElementById('mixer-volume').addEventListener('input', function() {
+      var val = parseFloat(this.value);
+      document.getElementById('mixer-volume-val').textContent = Math.round(val * 100) + '%';
+      document.getElementById('opt-masterVolume').value = val;
+      document.getElementById('val-masterVolume').textContent = val;
+      if (player) {
+        player.options.audio.masterVolume = val;
+        player.instances.forEach(function(inst) {
+          inst.opts.audio.masterVolume = val;
+        });
+      }
+    });
+
     // --- API buttons ---
     document.getElementById('api-play-first').addEventListener('click', function() {
       if (player) player.play(document.getElementById('demo-1'));
@@ -1375,6 +1461,8 @@ securePlayer.<span class="fn">init</span>();
         player.options.ensemble = null;
       }
       player.options.audio.algorithm = currentAlgorithm;
+      player.options.audio.tempo = parseInt(document.getElementById('mixer-tempo').value, 10);
+      player.options.audio.masterVolume = parseFloat(document.getElementById('mixer-volume').value);
       player._resolveInstruments();
 
       // Update each instance without stopping playback
@@ -1727,6 +1815,54 @@ securePlayer.<span class="fn">init</span>();
 
     // --- Init ---
     initPlayer();
+
+    // --- Sticky Nav: smooth scroll + active highlight ---
+    (function() {
+      var nav = document.getElementById('top-nav');
+      var links = nav.querySelectorAll('.nav-link');
+      var sections = [];
+      links.forEach(function(link) {
+        var id = link.getAttribute('href').slice(1);
+        var el = document.getElementById(id);
+        if (el) sections.push({ id: id, el: el, link: link });
+      });
+
+      // Smooth scroll
+      links.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          var id = this.getAttribute('href').slice(1);
+          var target = document.getElementById(id);
+          if (target) {
+            var y = target.getBoundingClientRect().top + window.pageYOffset - 52;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+          }
+        });
+      });
+
+      // Scroll spy
+      var ticking = false;
+      window.addEventListener('scroll', function() {
+        if (!ticking) {
+          window.requestAnimationFrame(function() {
+            var scrollY = window.pageYOffset + 80;
+            var current = sections[0];
+            for (var i = 0; i < sections.length; i++) {
+              if (sections[i].el.offsetTop <= scrollY) current = sections[i];
+            }
+            links.forEach(function(l) { l.classList.remove('active'); });
+            if (current) current.link.classList.add('active');
+
+            // Shadow on scroll
+            if (window.pageYOffset > 10) nav.classList.add('scrolled');
+            else nav.classList.remove('scrolled');
+
+            ticking = false;
+          });
+          ticking = true;
+        }
+      });
+    })();
   </script>
 
 </body>
