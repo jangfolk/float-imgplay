@@ -9,7 +9,8 @@ import { ImageEngine } from "./engines/image-engine.js";
 import { MidiEngine } from "./engines/midi-engine.js";
 import { AudioEngine } from "./engines/audio-engine.js";
 import { MetaParser } from "./parsers/meta-parser.js";
-export { ImageEngine, MidiEngine, AudioEngine, MetaParser };
+import { MidiExport } from "./export/midi-export.js";
+export { ImageEngine, MidiEngine, AudioEngine, MetaParser, MidiExport };
 
 export class FloatImgPlay {
   constructor(options = {}) {
