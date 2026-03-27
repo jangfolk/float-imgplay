@@ -129,7 +129,7 @@ const player = new FloatImgPlay({
 
 ## Mode Router
 
-FloatImgPlay automatically selects the right engine based on image metadata:
+Float:ImgPlay automatically selects the right engine based on image metadata:
 
 ```
 Image with meta.midi  → MIDI Engine (parse & play MIDI)

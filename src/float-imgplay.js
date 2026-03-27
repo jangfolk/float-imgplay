@@ -1,5 +1,5 @@
 /*!
- * FloatImgPlay v2.0.0 — Modular Architecture
+ * Float:ImgPlay v2.0.0 — Modular Architecture
  * Image-to-sound player. Scans pixel data and generates rule-based music via Web Audio API.
  * Modular architecture with Engine interface and Mode Router.
  */
@@ -185,7 +185,7 @@ export class FloatImgPlay {
 
   importConfig(config) {
     if (!config || config.type !== "float-imgplay-config") {
-      console.warn("[FloatImgPlay] Invalid config format");
+      console.warn("[Float:ImgPlay] Invalid config format");
       return this;
     }
 
@@ -384,7 +384,7 @@ export class FloatImgPlay {
       if (maxSize && maxSize > 0) {
         const contentLength = res.headers.get("content-length");
         if (contentLength && Number(contentLength) > maxSize) {
-          console.warn("[FloatImgPlay] File exceeds maxFileSize (" + maxSize + " bytes):", url);
+          console.warn("[Float:ImgPlay] File exceeds maxFileSize (" + maxSize + " bytes):", url);
           return false;
         }
       }
@@ -392,7 +392,7 @@ export class FloatImgPlay {
       if (allowedMimes && allowedMimes.length > 0) {
         const contentType = res.headers.get("content-type");
         if (contentType && !this._checkMimeType(contentType)) {
-          console.warn("[FloatImgPlay] MIME type not allowed (" + contentType + "):", url);
+          console.warn("[Float:ImgPlay] MIME type not allowed (" + contentType + "):", url);
           return false;
         }
       }
@@ -422,7 +422,7 @@ export class FloatImgPlay {
         if (inst.pendingAutoplay) this._maybeAutoplay(inst);
       });
     } catch (err) {
-      console.warn("[FloatImgPlay] Audio unlock failed:", err);
+      console.warn("[Float:ImgPlay] Audio unlock failed:", err);
     }
   }
 
@@ -442,7 +442,7 @@ export class FloatImgPlay {
     if (el.tagName === "IMG" && el.currentSrc || el.tagName === "IMG" && el.src) {
       const src = el.currentSrc || el.src;
       if (!this._checkUrlAllowed(src)) {
-        console.warn("[FloatImgPlay] URL blocked by allowedDomains:", src);
+        console.warn("[Float:ImgPlay] URL blocked by allowedDomains:", src);
         return null;
       }
       return { type: "img", url: src, fileName: fileNameFromUrl(src), imgEl: el };
@@ -452,7 +452,7 @@ export class FloatImgPlay {
     if (childImg && (childImg.currentSrc || childImg.src)) {
       const src = childImg.currentSrc || childImg.src;
       if (!this._checkUrlAllowed(src)) {
-        console.warn("[FloatImgPlay] URL blocked by allowedDomains:", src);
+        console.warn("[Float:ImgPlay] URL blocked by allowedDomains:", src);
         return null;
       }
       return { type: "img-child", url: src, fileName: fileNameFromUrl(src), imgEl: childImg };
@@ -462,7 +462,7 @@ export class FloatImgPlay {
     const url = extractCssUrl(bg);
     if (url) {
       if (!this._checkUrlAllowed(url)) {
-        console.warn("[FloatImgPlay] URL blocked by allowedDomains:", url);
+        console.warn("[Float:ImgPlay] URL blocked by allowedDomains:", url);
         return null;
       }
       return { type: "background", url, fileName: fileNameFromUrl(url), imgEl: null };
@@ -481,7 +481,7 @@ export class FloatImgPlay {
       inst.currentScore = score;
       inst.currentMeta = meta;
     } catch (err) {
-      console.warn("[FloatImgPlay] analyze failed:", err);
+      console.warn("[Float:ImgPlay] analyze failed:", err);
     }
   }
 
@@ -516,7 +516,7 @@ export class FloatImgPlay {
           parsed = MidiEngine.parseBase64(inst.meta.midi.data);
         } else if (inst.meta.midi.url) {
           if (!this._checkUrlAllowed(inst.meta.midi.url)) {
-            console.warn("[FloatImgPlay] MIDI URL blocked by allowedDomains:", inst.meta.midi.url);
+            console.warn("[Float:ImgPlay] MIDI URL blocked by allowedDomains:", inst.meta.midi.url);
             return;
           }
           const midiSecure = await this._checkResourceSecurity(inst.meta.midi.url);
@@ -525,7 +525,7 @@ export class FloatImgPlay {
         }
         if (parsed) inst.currentScore = parsed;
       } catch (err) {
-        console.warn("[FloatImgPlay] MIDI parse failed:", err);
+        console.warn("[Float:ImgPlay] MIDI parse failed:", err);
         return;
       }
     }
@@ -534,7 +534,7 @@ export class FloatImgPlay {
     if (inst.engine instanceof AudioEngine && inst.meta?.audio?.url && !inst.currentScore?.audioBuffer) {
       try {
         if (!this._checkUrlAllowed(inst.meta.audio.url)) {
-          console.warn("[FloatImgPlay] Audio URL blocked by allowedDomains:", inst.meta.audio.url);
+          console.warn("[Float:ImgPlay] Audio URL blocked by allowedDomains:", inst.meta.audio.url);
           return;
         }
         const audioSecure = await this._checkResourceSecurity(inst.meta.audio.url);
@@ -542,7 +542,7 @@ export class FloatImgPlay {
         const audioBuffer = await AudioEngine.fetchAndDecode(inst.meta.audio.url, ctx);
         inst.currentScore = { audioBuffer, audioUrl: inst.meta.audio.url };
       } catch (err) {
-        console.warn("[FloatImgPlay] Audio fetch failed:", err);
+        console.warn("[Float:ImgPlay] Audio fetch failed:", err);
         return;
       }
     }
@@ -746,7 +746,7 @@ export class FloatImgPlay {
       Object.assign(settingsBtn.style, {
         position: "absolute",
         top: "8px",
-        right: showVolumeControl ? "36px" : "8px",
+        left: "8px",
         pointerEvents: "auto",
         border: "0",
         borderRadius: "50%",
@@ -834,6 +834,7 @@ export class FloatImgPlay {
     // --- State ---
     let selectedInstrument = null;
     let selectedEnsemble = null;
+    let selectedAlgorithm = inst.opts.audio.algorithm || "rgba-digit";
 
     const pillStyle = {
       border: "1px solid rgba(255,255,255,0.2)",
@@ -849,6 +850,8 @@ export class FloatImgPlay {
       border: "1px solid #6c5ce7"
     };
 
+    const algoPills = [];
+
     function highlightPills() {
       instrPills.forEach((p) => {
         if ((selectedInstrument === null && p._presetKey === "none") || p._presetKey === selectedInstrument) {
@@ -860,6 +863,14 @@ export class FloatImgPlay {
       });
       ensemblePills.forEach((p) => {
         if (p._presetKey === selectedEnsemble) {
+          Object.assign(p.style, activePillStyle);
+        } else {
+          p.style.background = "rgba(255,255,255,0.08)";
+          p.style.border = "1px solid rgba(255,255,255,0.2)";
+        }
+      });
+      algoPills.forEach((p) => {
+        if (p._presetKey === selectedAlgorithm) {
           Object.assign(p.style, activePillStyle);
         } else {
           p.style.background = "rgba(255,255,255,0.08)";
@@ -934,6 +945,30 @@ export class FloatImgPlay {
       ensGrid.appendChild(pill);
     });
     popup.appendChild(ensGrid);
+
+    // --- Algorithms section ---
+    const algoTitle = document.createElement("div");
+    algoTitle.textContent = "Algorithm";
+    algoTitle.style.fontWeight = "bold";
+    popup.appendChild(algoTitle);
+
+    const algoGrid = document.createElement("div");
+    Object.assign(algoGrid.style, { display: "flex", flexWrap: "wrap", gap: "4px" });
+
+    Object.keys(ALGORITHMS).forEach((key) => {
+      const pill = document.createElement("button");
+      pill.type = "button";
+      pill.textContent = ALGORITHMS[key].name;
+      pill._presetKey = key;
+      Object.assign(pill.style, pillStyle);
+      pill.addEventListener("click", () => {
+        selectedAlgorithm = key;
+        highlightPills();
+      });
+      algoPills.push(pill);
+      algoGrid.appendChild(pill);
+    });
+    popup.appendChild(algoGrid);
 
     // --- Advanced toggle ---
     const advToggle = document.createElement("button");
@@ -1067,13 +1102,14 @@ export class FloatImgPlay {
     closeBtn.addEventListener("click", () => { popup.style.display = "none"; });
 
     applyBtn.addEventListener("click", () => {
-      this._applySettingsToInstance(inst, selectedInstrument, selectedEnsemble, advInputs);
+      this._applySettingsToInstance(inst, selectedInstrument, selectedEnsemble, advInputs, selectedAlgorithm);
       popup.style.display = "none";
     });
 
     resetBtn.addEventListener("click", () => {
       selectedInstrument = null;
       selectedEnsemble = null;
+      selectedAlgorithm = "rgba-digit";
       highlightPills();
       const defaults = this._defaults().audio;
       Object.keys(advInputs).forEach((key) => {
@@ -1096,7 +1132,7 @@ export class FloatImgPlay {
     return popup;
   }
 
-  _applySettingsToInstance(inst, instrumentName, ensembleName, advInputs) {
+  _applySettingsToInstance(inst, instrumentName, ensembleName, advInputs, algorithmName) {
     // Read advanced values
     Object.keys(advInputs).forEach((key) => {
       const el = advInputs[key];
@@ -1107,6 +1143,11 @@ export class FloatImgPlay {
         inst.opts.audio[key] = val;
       }
     });
+
+    // Apply algorithm
+    if (algorithmName) {
+      inst.opts.audio.algorithm = algorithmName;
+    }
 
     // Resolve instrument/ensemble
     if (ensembleName) {
@@ -1339,7 +1380,7 @@ export class FloatImgPlay {
           const config = JSON.parse(e.target.result);
           resolve(config);
         } catch (err) {
-          reject(new Error("[FloatImgPlay] Invalid JSON: " + err.message));
+          reject(new Error("[Float:ImgPlay] Invalid JSON: " + err.message));
         }
       };
       reader.onerror = reject;

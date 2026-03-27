@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FloatImgPlay - Demo</title>
+  <title>Float:ImgPlay - Demo</title>
   <link rel="stylesheet" href="float-imgplay.css">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,7 +15,7 @@
       line-height: 1.6;
     }
     h1 { text-align: center; margin-bottom: 8px; font-size: 32px; color: #fff; }
-    p.subtitle { text-align: center; margin-bottom: 48px; color: #666; font-size: 14px; }
+    p.subtitle { text-align: center; margin-bottom: 8px; color: #666; font-size: 14px; }
     .container { max-width: 960px; margin: 0 auto; }
 
     /* --- Section --- */
@@ -144,19 +144,19 @@
     /* --- Presets --- */
     .presets-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 6px;
     }
     .preset-card {
-      background: #16162a; border: 1px solid #2a2a3e; border-radius: 10px;
-      padding: 14px 16px; cursor: pointer; transition: all 0.2s;
+      background: #16162a; border: 1px solid #2a2a3e; border-radius: 8px;
+      padding: 8px 10px; cursor: pointer; transition: all 0.2s;
       text-align: center;
     }
-    .preset-card:hover { background: #1e1e3a; border-color: #6c5ce7; transform: translateY(-2px); }
-    .preset-card.active { background: #252542; border-color: #6c5ce7; box-shadow: 0 0 12px rgba(108,92,231,0.3); }
-    .preset-card .preset-icon { font-size: 24px; margin-bottom: 6px; }
-    .preset-card .preset-name { font-size: 13px; font-weight: 600; color: #fff; }
-    .preset-card .preset-desc { font-size: 11px; color: #666; margin-top: 4px; }
+    .preset-card:hover { background: #1e1e3a; border-color: #6c5ce7; transform: translateY(-1px); }
+    .preset-card.active { background: #252542; border-color: #6c5ce7; box-shadow: 0 0 8px rgba(108,92,231,0.3); }
+    .preset-card .preset-icon { font-size: 16px; margin-bottom: 2px; }
+    .preset-card .preset-name { font-size: 11px; font-weight: 600; color: #fff; }
+    .preset-card .preset-desc { font-size: 9px; color: #666; margin-top: 2px; }
 
     /* --- Upload --- */
     .upload-zone {
@@ -180,14 +180,15 @@
 </head>
 <body>
 
-  <h1>FloatImgPlay</h1>
+  <h1>Float:ImgPlay</h1>
   <p class="subtitle">Image-to-sound player &mdash; Scans pixel data and generates rule-based music via Web Audio API</p>
+  <p style="text-align:center; margin-bottom:48px;"><a href="https://github.com/float1122/float-imgplay" target="_blank" rel="noopener" style="color:#6c5ce7; font-size:13px; text-decoration:none;">GitHub Repository &rarr;</a></p>
 
   <div class="container">
 
     <!-- ============ LIVE DEMO ============ -->
     <div class="section">
-      <h2>Live Demo <span>8 images with different UI control combinations</span></h2>
+      <h2>Live Demo <span>10 images with different UI control combinations</span></h2>
       <div class="btn-row" style="margin-bottom: 16px;">
         <button class="btn btn-primary" id="btn-play-all">Play All</button>
         <button class="btn btn-danger" id="btn-stop-all-demo">Stop All</button>
@@ -213,33 +214,45 @@
         </div>
         <div>
           <div class="float-imgplay" id="demo-4">
+            <img src="https://picsum.photos/seed/ocean/160/160" alt="Ocean" width="160" height="160">
+          </div>
+          <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">Settings Only</div>
+        </div>
+        <div>
+          <div class="float-imgplay" id="demo-5">
             <img src="https://picsum.photos/seed/portrait/160/160" alt="Portrait" width="160" height="160">
           </div>
           <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">Volume Only</div>
         </div>
         <div>
-          <div class="float-imgplay" id="demo-5">
+          <div class="float-imgplay" id="demo-6">
             <img src="https://picsum.photos/seed/city/160/160" alt="City" width="160" height="160">
           </div>
           <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">Speed Only</div>
         </div>
         <div>
-          <div class="float-imgplay" id="demo-6">
+          <div class="float-imgplay" id="demo-7">
             <img src="https://picsum.photos/seed/galaxy/160/160" alt="Galaxy" width="160" height="160">
           </div>
           <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">Play + Volume</div>
         </div>
         <div>
-          <div class="float-imgplay" id="demo-7">
+          <div class="float-imgplay" id="demo-8">
             <img src="https://picsum.photos/seed/food/160/160" alt="Food" width="160" height="160">
           </div>
           <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">Play + Speed</div>
         </div>
         <div>
-          <div class="float-imgplay" id="demo-8">
+          <div class="float-imgplay" id="demo-9">
             <img src="https://picsum.photos/seed/abstract/160/160" alt="Abstract" width="160" height="160">
           </div>
           <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">Speed + Volume</div>
+        </div>
+        <div>
+          <div class="float-imgplay" id="demo-10">
+            <img src="https://picsum.photos/seed/forest/160/160" alt="Forest" width="160" height="160">
+          </div>
+          <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">Play + Settings</div>
         </div>
       </div>
     </div>
@@ -298,20 +311,6 @@
         <div class="preset-card" data-algorithm="color-harmony"><div class="preset-icon">&#127752;</div><div class="preset-name">Color Harmony</div><div class="preset-desc">HSL hue to scale degree, saturation to velocity</div></div>
         <div class="preset-card" data-algorithm="spectral"><div class="preset-icon">&#127926;</div><div class="preset-name">Spectral</div><div class="preset-desc">RGB as frequency bands (high/mid/low)</div></div>
         <div class="preset-card" data-algorithm="contour"><div class="preset-icon">&#12336;</div><div class="preset-name">Contour</div><div class="preset-desc">Follow brightness gradients for melody</div></div>
-      </div>
-    </div>
-
-    <!-- ============ PRESET JSON ============ -->
-    <div class="section">
-      <h2>Preset JSON <span>Export/import your sound settings</span></h2>
-      <div style="background:#16162a; border:1px solid #2a2a3e; border-radius:12px; padding:24px;">
-        <div class="btn-row" style="margin-bottom:16px;">
-          <button class="btn btn-primary" id="btn-export-json">Export Current Settings</button>
-          <button class="btn btn-secondary" id="btn-import-json">Import JSON File</button>
-          <input type="file" id="import-json-input" accept=".json,application/json" style="display:none;">
-        </div>
-        <div id="json-preview" style="background:#12121f; border:1px solid #2a2a3e; border-radius:8px; padding:16px; font-family:'SF Mono','Fira Code',monospace; font-size:11px; line-height:1.6; color:#a8b2d1; white-space:pre-wrap; max-height:300px; overflow-y:auto; display:none;"></div>
-        <div id="json-status" style="margin-top:10px; font-size:12px; color:#6c5ce7;"></div>
       </div>
     </div>
 
@@ -586,6 +585,21 @@
         <h3 style="font-size:14px; color:#aaa; margin-bottom:8px;">Generated Code</h3>
         <p class="desc">Current settings as initialization code. Copy and use directly.</p>
         <div id="generated-code"></div>
+      </div>
+
+      <!-- Preset JSON (export/import) -->
+      <div style="margin-top: 20px;">
+        <h3 style="font-size:14px; color:#aaa; margin-bottom:8px;">Preset JSON</h3>
+        <p class="desc">Export/import your current settings as JSON.</p>
+        <div style="background:#12121f; border:1px solid #2a2a3e; border-radius:8px; padding:16px; margin-top:12px;">
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn btn-primary" id="btn-export-json">Export Current Settings</button>
+            <button class="btn btn-secondary" id="btn-import-json">Import JSON File</button>
+            <input type="file" id="import-json-input" accept=".json,application/json" style="display:none;">
+          </div>
+          <div id="json-preview" style="background:#0a0a14; border:1px solid #2a2a3e; border-radius:6px; padding:12px; font-family:'SF Mono','Fira Code',monospace; font-size:11px; line-height:1.6; color:#a8b2d1; white-space:pre-wrap; max-height:300px; overflow-y:auto; display:none;"></div>
+          <div id="json-status" style="margin-top:8px; font-size:12px; color:#6c5ce7;"></div>
+        </div>
       </div>
     </div>
 
@@ -1043,16 +1057,18 @@ securePlayer.<span class="fn">init</span>();
       player = new FloatImgPlay.FloatImgPlay(opts);
       player.init();
 
-      // Register 8 demo images with individual UI combos
+      // Register 10 demo images with individual UI combos
       var demoConfigs = [
         { id: 'demo-1', showPlayOverlay: true, showVolumeControl: true, showSpeedControl: true, showSettingsButton: true },
         { id: 'demo-2', showPlayOverlay: false, showVolumeControl: false, showSpeedControl: false, showSettingsButton: false, clickToPlay: false },
         { id: 'demo-3', showPlayOverlay: true },
-        { id: 'demo-4', showVolumeControl: true },
-        { id: 'demo-5', showSpeedControl: true },
-        { id: 'demo-6', showPlayOverlay: true, showVolumeControl: true },
-        { id: 'demo-7', showPlayOverlay: true, showSpeedControl: true },
-        { id: 'demo-8', showVolumeControl: true, showSpeedControl: true }
+        { id: 'demo-4', showSettingsButton: true },
+        { id: 'demo-5', showVolumeControl: true },
+        { id: 'demo-6', showSpeedControl: true },
+        { id: 'demo-7', showPlayOverlay: true, showVolumeControl: true },
+        { id: 'demo-8', showPlayOverlay: true, showSpeedControl: true },
+        { id: 'demo-9', showVolumeControl: true, showSpeedControl: true },
+        { id: 'demo-10', showPlayOverlay: true, showSettingsButton: true }
       ];
 
       demoConfigs.forEach(function(cfg) {
