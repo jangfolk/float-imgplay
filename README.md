@@ -1,8 +1,19 @@
-# float-imgplay
+# Float:ImgPlay
 
-Image-to-sound player. Scans pixel data from images and generates rule-based music via Web Audio API.
+Image-to-sound engine. Converts images into playable audio using Web Audio API.
 
-Drop a CSS class on any image element, initialize, done.
+> "Images are not just seen — they are played."
+
+## Features
+
+- **Image Analysis Engine** — Pixel scanning generates rule-based music from any image
+- **MIDI Engine** — Parse and play Standard MIDI Files embedded in image metadata
+- **Audio Engine** — Stream mp3/wav audio referenced in image metadata
+- **Meta Parser** — Extract metadata from PNG tEXt, EXIF UserComment, or sidecar JSON
+- **MIDI Export** — Export generated scores as Standard MIDI Files (.mid)
+- **Security** — Domain whitelist, file size limits, MIME type validation
+- **Visibility System** — IntersectionObserver + occlusion detection for smart autoplay
+- **Zero dependencies** — Pure browser APIs, no runtime dependencies
 
 ## Install
 
@@ -22,7 +33,7 @@ npm install float-imgplay
 <script src="https://cdn.jsdelivr.net/npm/float-imgplay"></script>
 ```
 
-## Usage
+## Quick Start
 
 ### Script tag
 
@@ -90,6 +101,12 @@ const player = new FloatImgPlay({
     fixedRootMidi: 60,
     octaveContrastThreshold: 100,
     octaveShiftSemitones: 12
+  },
+
+  security: {
+    allowedDomains: [],          // empty = allow all
+    maxFileSize: 10485760,       // 10MB
+    allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
   }
 });
 ```
@@ -107,18 +124,48 @@ const player = new FloatImgPlay({
 | `audio.tempo` | `100` | BPM |
 | `audio.scaleMode` | `'auto'` | Scale selection mode |
 | `audio.filterType` | `'lowpass'` | BiquadFilter type |
+| `security.allowedDomains` | `[]` | Allowed hostnames (empty = all) |
+| `security.maxFileSize` | `10485760` | Max file size in bytes |
 
-### Per-element options
+## Mode Router
+
+FloatImgPlay automatically selects the right engine based on image metadata:
+
+```
+Image with meta.midi  → MIDI Engine (parse & play MIDI)
+Image with meta.audio → Audio Engine (stream mp3/wav)
+Image without meta    → Image Engine (pixel analysis)
+```
+
+### Embedding metadata
+
+**Sidecar JSON** — Place `image.jpg.imgplay.json` next to your image:
+
+```json
+{
+  "imgplay": {
+    "midi": { "url": "/songs/track.mid" }
+  }
+}
+```
+
+**PNG tEXt** — Embed in PNG chunk with key `imgplay`
+
+**EXIF UserComment** — Embed in JPEG EXIF data
+
+## MIDI Export
 
 ```js
+import { FloatImgPlay, MidiExport } from 'float-imgplay';
+
 const player = new FloatImgPlay({ selector: '.float-imgplay' });
 player.init();
 
-const hero = document.querySelector('#hero');
-player.register(hero, {
-  autoplay: true,
-  audio: { waveform: 'sawtooth', tempo: 132, scaleMode: 'minor' }
-});
+// Export a score as MIDI file
+const inst = player.instances.get(someElement);
+if (inst && inst.currentScore) {
+  MidiExport.exportAndDownload(inst.currentScore, { bpm: 120 }, 'my-image.mid');
+}
 ```
 
 ## API
@@ -134,25 +181,43 @@ player.register(hero, {
 | `pause(el)` | Alias for `stop()` |
 | `refresh()` | Re-analyze all images (e.g., after src change) |
 
-## CSS
+### Exported modules
 
 ```js
-import 'float-imgplay/css';
-```
-
-```html
-<link rel="stylesheet" href="https://unpkg.com/float-imgplay/dist/float-imgplay.css">
+import {
+  FloatImgPlay,   // Core player
+  ImageEngine,    // Pixel analysis engine
+  MidiEngine,     // MIDI parser + playback
+  AudioEngine,    // Audio streaming engine
+  MetaParser,     // Metadata extraction
+  MidiExport      // Score to MIDI file
+} from 'float-imgplay';
 ```
 
 ## How it works
 
-1. **Pixel scanning** - Downscales image to 64px, samples pixel rows at configurable positions
-2. **Pitch mapping** - Brightness maps to scale degree, red/blue contrast triggers octave shifts
-3. **Duration** - Blue-dominant pixels get longer notes, red-dominant get shorter
-4. **Velocity** - Color saturation maps to note velocity
-5. **Synthesis** - Web Audio API oscillator/filter/gain node chain produces sound
-6. **Visibility** - IntersectionObserver + visibilitychange + elementFromPoint() occlusion detection
+1. **Pixel scanning** — Downscales image to 64px, samples pixel rows at configurable positions
+2. **Pitch mapping** — Brightness maps to scale degree, red/blue contrast triggers octave shifts
+3. **Duration** — Blue-dominant pixels get longer notes, red-dominant get shorter
+4. **Velocity** — Color saturation maps to note velocity
+5. **Synthesis** — Web Audio API oscillator/filter/gain node chain produces sound
+6. **Visibility** — IntersectionObserver + visibilitychange + elementFromPoint() occlusion detection
+
+## Architecture
+
+```
+[Image] → [Meta Parser] → [Mode Router] → [Engine] → [Web Audio Output]
+                                              ↓
+                                    ┌─────────┼─────────┐
+                                    │         │         │
+                              ImageEngine  MidiEngine  AudioEngine
+```
+
+## Contact
+
+- Website: [float.do](https://float.do)
+- Email: contact@float.do
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.

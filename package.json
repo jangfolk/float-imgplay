@@ -39,7 +39,7 @@
     "image-analysis",
     "sonification"
   ],
-  "author": "",
+  "author": "Float <contact@float.do> (https://float.do)",
   "license": "MIT",
   "devDependencies": {
     "rollup": "^4.0.0",
@@ -48,6 +48,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/user/float-imgplay.git"
+    "url": "git+https://github.com/jangfolk/float-imgplay.git"
   }
 }
