@@ -122,6 +122,7 @@ export class FloatImgPlay {
     if (inst.ui?.volumeInput) inst.ui.volumeInput.removeEventListener("input", inst._onVolumeInput);
     if (inst.ui?.speedInput) inst.ui.speedInput.removeEventListener("input", inst._onSpeedInput);
     if (inst.ui?.settingsBtn) inst.ui.settingsBtn.removeEventListener("click", inst._onSettingsClick);
+    if (inst.ui?.loopBtn) inst.ui.loopBtn.removeEventListener("click", inst._onLoopClick);
     if (inst.el) inst.el.removeEventListener("click", inst._onElClick);
 
     if (inst.ui?.root && inst.ui.root.parentNode) {
@@ -271,6 +272,8 @@ export class FloatImgPlay {
       showVolumeControl: true,
       showSpeedControl: false,
       showSettingsButton: false,
+      showLoopButton: false,
+      loop: false,
       clickToPlay: true,
       overlayIcon: "\u25B6",
       overlayPlayText: "",
@@ -553,6 +556,11 @@ export class FloatImgPlay {
     inst.playHandle = handle;
 
     const timerId = window.setTimeout(() => {
+      if (inst.opts.loop && inst.isPlaying) {
+        this._stopInstance(inst);
+        this._playInstance(inst);
+        return;
+      }
       inst.isPlaying = false;
       inst.el.classList.remove(inst.opts.classNames.playing);
       inst.el.classList.add(inst.opts.classNames.paused);
@@ -592,7 +600,7 @@ export class FloatImgPlay {
   _buildUI(inst) {
     if (inst.hasRenderedUI) return;
 
-    const { classNames, showPlayOverlay, showVolumeControl, showSpeedControl, showSettingsButton, overlayIcon, overlayPlayText, zIndexUI, audio } = inst.opts;
+    const { classNames, showPlayOverlay, showVolumeControl, showSpeedControl, showSettingsButton, showLoopButton, overlayIcon, overlayPlayText, zIndexUI, audio } = inst.opts;
     const el = inst.el;
 
     const currentPosition = getComputedStyle(el).position;
@@ -768,10 +776,41 @@ export class FloatImgPlay {
       uiRoot.appendChild(settingsPopupEl);
     }
 
+    let loopBtn = null;
+    if (showLoopButton) {
+      loopBtn = document.createElement("button");
+      loopBtn.type = "button";
+      loopBtn.className = "float-imgplay-loop";
+      loopBtn.setAttribute("aria-label", "Loop");
+      loopBtn.textContent = "\u{1F501}";
+      const loopTop = showSettingsButton ? "44px" : "8px";
+      Object.assign(loopBtn.style, {
+        position: "absolute",
+        top: loopTop,
+        left: "8px",
+        pointerEvents: "auto",
+        border: "0",
+        borderRadius: "50%",
+        width: "32px",
+        height: "32px",
+        fontSize: "14px",
+        lineHeight: "1",
+        background: inst.opts.loop ? "rgba(108,92,231,0.7)" : "rgba(0,0,0,0.55)",
+        color: "#fff",
+        backdropFilter: "blur(10px)",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "background 0.15s"
+      });
+      uiRoot.appendChild(loopBtn);
+    }
+
     el.classList.add(classNames.initialized);
     el.appendChild(uiRoot);
 
-    inst.ui = { root: uiRoot, playBtn, volumeWrap, volumeInput, speedWrap, speedInput, speedLabel, settingsBtn, settingsPopup: settingsPopupEl };
+    inst.ui = { root: uiRoot, playBtn, volumeWrap, volumeInput, speedWrap, speedInput, speedLabel, settingsBtn, settingsPopup: settingsPopupEl, loopBtn };
     inst.hasRenderedUI = true;
   }
 
@@ -1201,6 +1240,9 @@ export class FloatImgPlay {
       if (inst.ui?.settingsBtn && (e.target === inst.ui.settingsBtn || inst.ui.settingsPopup?.contains(e.target))) {
         return;
       }
+      if (inst.ui?.loopBtn && e.target === inst.ui.loopBtn) {
+        return;
+      }
       if (inst.opts.clickToPlay === false) {
         return;
       }
@@ -1240,6 +1282,16 @@ export class FloatImgPlay {
         }
       };
       inst.ui.settingsBtn.addEventListener("click", inst._onSettingsClick);
+    }
+
+    if (inst.ui?.loopBtn) {
+      inst._onLoopClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        inst.opts.loop = !inst.opts.loop;
+        inst.ui.loopBtn.style.background = inst.opts.loop ? "rgba(108,92,231,0.7)" : "rgba(0,0,0,0.55)";
+      };
+      inst.ui.loopBtn.addEventListener("click", inst._onLoopClick);
     }
 
     inst.el.addEventListener("click", inst._onElClick);

@@ -333,6 +333,7 @@
         <div style="display:flex; align-items:center; gap:12px; margin-top:10px; flex-wrap:wrap;">
           <button class="btn btn-primary" id="btn-play-all" style="padding:5px 14px; font-size:11px;">Play All</button>
           <button class="btn btn-danger" id="btn-stop-all-demo" style="padding:5px 14px; font-size:11px;">Stop All</button>
+          <button class="btn btn-secondary" id="btn-loop-all" style="padding:5px 14px; font-size:11px;">&#x1F501; Loop</button>
           <div style="display:flex; align-items:center; gap:4px; margin-left:8px;">
             <span style="font-size:9px; color:#555; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">BPM</span>
             <input type="range" id="mixer-tempo" min="40" max="240" step="1" value="100" style="width:90px; height:14px; accent-color:#6c5ce7;">
@@ -1201,7 +1202,7 @@ securePlayer.<span class="fn">init</span>();
 
       // Register 10 demo images with individual UI combos
       var demoConfigs = [
-        { id: 'demo-1', showPlayOverlay: true, showVolumeControl: true, showSpeedControl: true, showSettingsButton: true },
+        { id: 'demo-1', showPlayOverlay: true, showVolumeControl: true, showSpeedControl: true, showSettingsButton: true, showLoopButton: true },
         { id: 'demo-2', showPlayOverlay: false, showVolumeControl: false, showSpeedControl: false, showSettingsButton: false },
         { id: 'demo-3', showPlayOverlay: true },
         { id: 'demo-4', showSettingsButton: true },
@@ -1337,6 +1338,23 @@ securePlayer.<span class="fn">init</span>();
     });
     document.getElementById('btn-stop-all-demo').addEventListener('click', function() {
       if (player) player.stopAll();
+    });
+
+    var globalLoop = false;
+    document.getElementById('btn-loop-all').addEventListener('click', function() {
+      globalLoop = !globalLoop;
+      this.style.background = globalLoop ? 'rgba(108,92,231,0.7)' : '';
+      this.style.color = globalLoop ? '#fff' : '';
+      this.style.borderColor = globalLoop ? '#6c5ce7' : '';
+      if (player) {
+        player.options.loop = globalLoop;
+        player.instances.forEach(function(inst) {
+          inst.opts.loop = globalLoop;
+          if (inst.ui && inst.ui.loopBtn) {
+            inst.ui.loopBtn.style.background = globalLoop ? 'rgba(108,92,231,0.7)' : 'rgba(0,0,0,0.55)';
+          }
+        });
+      }
     });
 
     // --- Mixer tempo/volume ---
