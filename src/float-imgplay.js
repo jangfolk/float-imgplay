@@ -12,8 +12,10 @@ import { MetaParser } from "./parsers/meta-parser.js";
 import { MidiExport } from "./export/midi-export.js";
 import { MetaEmbed } from "./embed/meta-embed.js";
 import { INSTRUMENT_PRESETS, ENSEMBLE_PRESETS, resolveInstrument, resolveEnsemble } from "./instruments/presets.js";
+import { ALGORITHMS, getAlgorithm, registerAlgorithm } from "./algorithms/index.js";
 export { ImageEngine, MidiEngine, AudioEngine, MetaParser, MidiExport, MetaEmbed };
 export { INSTRUMENT_PRESETS, ENSEMBLE_PRESETS, resolveInstrument, resolveEnsemble };
+export { ALGORITHMS, getAlgorithm, registerAlgorithm };
 
 export class FloatImgPlay {
   constructor(options = {}) {
@@ -226,6 +228,7 @@ export class FloatImgPlay {
         settingsPopup: "float-imgplay-settings-popup"
       },
       audio: {
+        algorithm: "rgba-digit",
         masterVolume: 0.25,
         pitchShiftSemitones: 0,
         waveform: "triangle",
