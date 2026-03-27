@@ -139,6 +139,42 @@
       white-space: pre-wrap; word-break: break-all; margin-top: 12px;
       max-height: 400px; overflow-y: auto;
     }
+
+    /* --- Presets --- */
+    .presets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+    }
+    .preset-card {
+      background: #16162a; border: 1px solid #2a2a3e; border-radius: 10px;
+      padding: 14px 16px; cursor: pointer; transition: all 0.2s;
+      text-align: center;
+    }
+    .preset-card:hover { background: #1e1e3a; border-color: #6c5ce7; transform: translateY(-2px); }
+    .preset-card.active { background: #252542; border-color: #6c5ce7; box-shadow: 0 0 12px rgba(108,92,231,0.3); }
+    .preset-card .preset-icon { font-size: 24px; margin-bottom: 6px; }
+    .preset-card .preset-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .preset-card .preset-desc { font-size: 11px; color: #666; margin-top: 4px; }
+
+    /* --- Upload --- */
+    .upload-zone {
+      border: 2px dashed #2a2a3e; border-radius: 12px; padding: 40px;
+      text-align: center; cursor: pointer; transition: all 0.2s;
+      background: #12121f;
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: #6c5ce7; background: #16162a;
+    }
+    .upload-zone .upload-icon { font-size: 36px; margin-bottom: 12px; color: #444; }
+    .upload-zone .upload-text { font-size: 14px; color: #888; }
+    .upload-zone .upload-hint { font-size: 12px; color: #555; margin-top: 6px; }
+    #upload-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-top: 16px;
+    }
+    #upload-grid .float-imgplay img { width: 100%; height: auto; display: block; }
   </style>
 </head>
 <body>
@@ -166,6 +202,75 @@
              style="background-image:url('https://picsum.photos/seed/mountain/320/320'); width:100%; height:220px; background-size:cover;">
         </div>
       </div>
+    </div>
+
+    <!-- ============ SOUND PRESETS ============ -->
+    <div class="section">
+      <h2>Sound Presets <span>Click a preset, then play any image</span></h2>
+      <div class="presets-grid" id="presets-grid">
+        <div class="preset-card active" data-preset="default">
+          <div class="preset-icon">&#127925;</div>
+          <div class="preset-name">Default</div>
+          <div class="preset-desc">Triangle, 100 BPM</div>
+        </div>
+        <div class="preset-card" data-preset="ambient">
+          <div class="preset-icon">&#127752;</div>
+          <div class="preset-name">Ambient</div>
+          <div class="preset-desc">Slow, dreamy pads</div>
+        </div>
+        <div class="preset-card" data-preset="chiptune">
+          <div class="preset-icon">&#127918;</div>
+          <div class="preset-name">Chiptune</div>
+          <div class="preset-desc">8-bit retro game</div>
+        </div>
+        <div class="preset-card" data-preset="techno">
+          <div class="preset-icon">&#128165;</div>
+          <div class="preset-name">Techno</div>
+          <div class="preset-desc">Fast, aggressive</div>
+        </div>
+        <div class="preset-card" data-preset="jazz">
+          <div class="preset-icon">&#127927;</div>
+          <div class="preset-name">Jazz</div>
+          <div class="preset-desc">Smooth minor scale</div>
+        </div>
+        <div class="preset-card" data-preset="cinematic">
+          <div class="preset-icon">&#127916;</div>
+          <div class="preset-name">Cinematic</div>
+          <div class="preset-desc">Epic, wide filter</div>
+        </div>
+        <div class="preset-card" data-preset="lofi">
+          <div class="preset-icon">&#9749;</div>
+          <div class="preset-name">Lo-Fi</div>
+          <div class="preset-desc">Warm, mellow beats</div>
+        </div>
+        <div class="preset-card" data-preset="bright">
+          <div class="preset-icon">&#9728;</div>
+          <div class="preset-name">Bright</div>
+          <div class="preset-desc">Major, cheerful</div>
+        </div>
+        <div class="preset-card" data-preset="dark">
+          <div class="preset-icon">&#127769;</div>
+          <div class="preset-name">Dark</div>
+          <div class="preset-desc">Minor, low register</div>
+        </div>
+        <div class="preset-card" data-preset="minimal">
+          <div class="preset-icon">&#9679;</div>
+          <div class="preset-name">Minimal</div>
+          <div class="preset-desc">Sparse, quiet sine</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ UPLOAD IMAGE ============ -->
+    <div class="section">
+      <h2>Upload Image <span>Drop or select your own image to play</span></h2>
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">&#128444;</div>
+        <div class="upload-text">Drop image here or click to select</div>
+        <div class="upload-hint">PNG, JPG, WebP, GIF</div>
+        <input type="file" id="upload-input" accept="image/*" multiple style="display:none;">
+      </div>
+      <div id="upload-grid"></div>
     </div>
 
     <!-- ============ SETTINGS PANEL ============ -->
@@ -977,6 +1082,209 @@ securePlayer.<span class="fn">init</span>();
       });
       status.textContent = count > 0 ? 'Exported ' + count + ' MIDI file(s)' : 'No scores available. Play images first.';
     });
+
+    // --- Sound Presets ---
+    var PRESETS = {
+      default: {
+        waveform: 'triangle', tempo: 100, masterVolume: 0.25, scaleMode: 'auto',
+        filterType: 'lowpass', filterBaseHz: 900, filterVelocityAmount: 3000,
+        attack: 0.02, release: 0.03, pitchShiftSemitones: 0, noteDurationBeats: 0.5,
+        restThreshold: 28, sampleColumns: 24,
+        octaveContrastThreshold: 100, octaveShiftSemitones: 12,
+        brightDuration: 0.26, blueDuration: 0.46, neutralDuration: 0.34
+      },
+      ambient: {
+        waveform: 'sine', tempo: 56, masterVolume: 0.2, scaleMode: 'pentatonic',
+        filterType: 'lowpass', filterBaseHz: 600, filterVelocityAmount: 1200,
+        attack: 0.15, release: 0.3, pitchShiftSemitones: 0, noteDurationBeats: 1.2,
+        restThreshold: 20, sampleColumns: 16,
+        octaveContrastThreshold: 120, octaveShiftSemitones: 12,
+        brightDuration: 0.5, blueDuration: 0.8, neutralDuration: 0.6
+      },
+      chiptune: {
+        waveform: 'square', tempo: 160, masterVolume: 0.18, scaleMode: 'major',
+        filterType: 'highpass', filterBaseHz: 200, filterVelocityAmount: 5000,
+        attack: 0.005, release: 0.01, pitchShiftSemitones: 12, noteDurationBeats: 0.25,
+        restThreshold: 35, sampleColumns: 32,
+        octaveContrastThreshold: 80, octaveShiftSemitones: 12,
+        brightDuration: 0.15, blueDuration: 0.2, neutralDuration: 0.18
+      },
+      techno: {
+        waveform: 'sawtooth', tempo: 138, masterVolume: 0.22, scaleMode: 'minor',
+        filterType: 'lowpass', filterBaseHz: 400, filterVelocityAmount: 6000,
+        attack: 0.005, release: 0.02, pitchShiftSemitones: -12, noteDurationBeats: 0.25,
+        restThreshold: 40, sampleColumns: 32,
+        octaveContrastThreshold: 60, octaveShiftSemitones: 24,
+        brightDuration: 0.12, blueDuration: 0.18, neutralDuration: 0.15
+      },
+      jazz: {
+        waveform: 'triangle', tempo: 88, masterVolume: 0.28, scaleMode: 'minor',
+        filterType: 'lowpass', filterBaseHz: 1200, filterVelocityAmount: 2500,
+        attack: 0.03, release: 0.08, pitchShiftSemitones: -5, noteDurationBeats: 0.6,
+        restThreshold: 22, sampleColumns: 20,
+        octaveContrastThreshold: 90, octaveShiftSemitones: 12,
+        brightDuration: 0.3, blueDuration: 0.55, neutralDuration: 0.4
+      },
+      cinematic: {
+        waveform: 'sawtooth', tempo: 72, masterVolume: 0.3, scaleMode: 'minor',
+        filterType: 'lowpass', filterBaseHz: 500, filterVelocityAmount: 4000,
+        attack: 0.08, release: 0.2, pitchShiftSemitones: -7, noteDurationBeats: 0.8,
+        restThreshold: 15, sampleColumns: 16,
+        octaveContrastThreshold: 70, octaveShiftSemitones: 12,
+        brightDuration: 0.4, blueDuration: 0.7, neutralDuration: 0.55
+      },
+      lofi: {
+        waveform: 'triangle', tempo: 78, masterVolume: 0.2, scaleMode: 'pentatonic',
+        filterType: 'lowpass', filterBaseHz: 700, filterVelocityAmount: 1500,
+        attack: 0.04, release: 0.1, pitchShiftSemitones: -3, noteDurationBeats: 0.5,
+        restThreshold: 25, sampleColumns: 20,
+        octaveContrastThreshold: 110, octaveShiftSemitones: 12,
+        brightDuration: 0.3, blueDuration: 0.5, neutralDuration: 0.38
+      },
+      bright: {
+        waveform: 'sine', tempo: 120, masterVolume: 0.25, scaleMode: 'major',
+        filterType: 'lowpass', filterBaseHz: 2000, filterVelocityAmount: 4000,
+        attack: 0.01, release: 0.02, pitchShiftSemitones: 5, noteDurationBeats: 0.4,
+        restThreshold: 30, sampleColumns: 28,
+        octaveContrastThreshold: 90, octaveShiftSemitones: 12,
+        brightDuration: 0.2, blueDuration: 0.35, neutralDuration: 0.28
+      },
+      dark: {
+        waveform: 'sawtooth', tempo: 64, masterVolume: 0.22, scaleMode: 'minor',
+        filterType: 'lowpass', filterBaseHz: 350, filterVelocityAmount: 2000,
+        attack: 0.06, release: 0.15, pitchShiftSemitones: -12, noteDurationBeats: 0.7,
+        restThreshold: 18, sampleColumns: 16,
+        octaveContrastThreshold: 50, octaveShiftSemitones: 12,
+        brightDuration: 0.45, blueDuration: 0.7, neutralDuration: 0.55
+      },
+      minimal: {
+        waveform: 'sine', tempo: 90, masterVolume: 0.12, scaleMode: 'pentatonic',
+        filterType: 'lowpass', filterBaseHz: 1500, filterVelocityAmount: 1000,
+        attack: 0.03, release: 0.05, pitchShiftSemitones: 0, noteDurationBeats: 0.5,
+        restThreshold: 50, sampleColumns: 12,
+        octaveContrastThreshold: 130, octaveShiftSemitones: 12,
+        brightDuration: 0.22, blueDuration: 0.35, neutralDuration: 0.28
+      }
+    };
+
+    var activePreset = 'default';
+
+    function applyPreset(name) {
+      var p = PRESETS[name];
+      if (!p) return;
+      activePreset = name;
+
+      // Update UI active state
+      document.querySelectorAll('.preset-card').forEach(function(card) {
+        card.classList.toggle('active', card.dataset.preset === name);
+      });
+
+      // Apply preset values to settings UI
+      document.getElementById('opt-masterVolume').value = p.masterVolume;
+      document.getElementById('opt-pitchShiftSemitones').value = p.pitchShiftSemitones;
+      document.getElementById('opt-waveform').value = p.waveform;
+      document.getElementById('opt-tempo').value = p.tempo;
+      document.getElementById('opt-noteDurationBeats').value = p.noteDurationBeats;
+      document.getElementById('opt-restThreshold').value = p.restThreshold;
+      document.getElementById('opt-sampleColumns').value = p.sampleColumns;
+      document.getElementById('opt-filterType').value = p.filterType;
+      document.getElementById('opt-filterBaseHz').value = p.filterBaseHz;
+      document.getElementById('opt-filterVelocityAmount').value = p.filterVelocityAmount;
+      document.getElementById('opt-attack').value = p.attack;
+      document.getElementById('opt-release').value = p.release;
+      document.getElementById('opt-scaleMode').value = p.scaleMode;
+      document.getElementById('opt-octaveContrastThreshold').value = p.octaveContrastThreshold;
+      document.getElementById('opt-octaveShiftSemitones').value = p.octaveShiftSemitones;
+      document.getElementById('opt-brightDuration').value = p.brightDuration;
+      document.getElementById('opt-blueDuration').value = p.blueDuration;
+      document.getElementById('opt-neutralDuration').value = p.neutralDuration;
+
+      updateAllValueDisplays();
+      initPlayer();
+    }
+
+    document.querySelectorAll('.preset-card').forEach(function(card) {
+      card.addEventListener('click', function() {
+        applyPreset(card.dataset.preset);
+      });
+    });
+
+    // --- Image Upload ---
+    var uploadZone = document.getElementById('upload-zone');
+    var uploadInput = document.getElementById('upload-input');
+    var uploadGrid = document.getElementById('upload-grid');
+    var uploadCounter = 0;
+
+    uploadZone.addEventListener('click', function() {
+      uploadInput.click();
+    });
+
+    uploadZone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      uploadZone.classList.add('drag-over');
+    });
+
+    uploadZone.addEventListener('dragleave', function() {
+      uploadZone.classList.remove('drag-over');
+    });
+
+    uploadZone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    uploadInput.addEventListener('change', function() {
+      handleFiles(uploadInput.files);
+      uploadInput.value = '';
+    });
+
+    function handleFiles(files) {
+      Array.from(files).forEach(function(file) {
+        if (!file.type.startsWith('image/')) return;
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          uploadCounter++;
+          var id = 'upload-img-' + uploadCounter;
+
+          var wrapper = document.createElement('div');
+          wrapper.className = 'float-imgplay';
+          wrapper.id = id;
+
+          var img = document.createElement('img');
+          img.src = e.target.result;
+          img.alt = file.name;
+          img.width = 320;
+          img.height = 320;
+          img.style.objectFit = 'cover';
+
+          var removeBtn = document.createElement('button');
+          removeBtn.className = 'btn btn-danger';
+          removeBtn.textContent = 'X';
+          Object.assign(removeBtn.style, {
+            position: 'absolute', top: '8px', right: '8px', zIndex: '20',
+            padding: '4px 10px', fontSize: '11px', minWidth: 'auto', minHeight: 'auto',
+            borderRadius: '6px', pointerEvents: 'auto'
+          });
+          removeBtn.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            if (player) player.unregister(wrapper);
+            wrapper.parentNode.removeChild(wrapper);
+          });
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(removeBtn);
+          uploadGrid.appendChild(wrapper);
+
+          // Register with current player
+          if (player) {
+            player.register(wrapper);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
 
     // --- Init ---
     initPlayer();
