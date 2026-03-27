@@ -289,7 +289,7 @@
           <div class="float-imgplay" id="demo-2">
             <img src="https://picsum.photos/seed/volcano/160/160" alt="Volcano" width="160" height="160">
           </div>
-          <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">No Controls (disabled)</div>
+          <div style="text-align:center; font-size:10px; color:#666; margin-top:4px;">No Controls</div>
         </div>
         <div>
           <div class="float-imgplay" id="demo-3">
@@ -1135,7 +1135,7 @@ securePlayer.<span class="fn">init</span>();
       // Register 10 demo images with individual UI combos
       var demoConfigs = [
         { id: 'demo-1', showPlayOverlay: true, showVolumeControl: true, showSpeedControl: true, showSettingsButton: true },
-        { id: 'demo-2', showPlayOverlay: false, showVolumeControl: false, showSpeedControl: false, showSettingsButton: false, clickToPlay: false },
+        { id: 'demo-2', showPlayOverlay: false, showVolumeControl: false, showSpeedControl: false, showSettingsButton: false },
         { id: 'demo-3', showPlayOverlay: true },
         { id: 'demo-4', showSettingsButton: true },
         { id: 'demo-5', showVolumeControl: true },
@@ -1360,6 +1360,39 @@ securePlayer.<span class="fn">init</span>();
     var currentInstrument = null;  // null = default (no instrument override)
     var currentEnsemble = null;    // null = no ensemble
 
+    // Hot-swap settings without stopping playback
+    function hotSwapSettings() {
+      if (!player) return;
+
+      // Update global options
+      if (currentEnsemble) {
+        player.options.ensemble = currentEnsemble;
+        player.options.instruments = null;
+      } else if (currentInstrument) {
+        player.options.instruments = [{ preset: currentInstrument }];
+        player.options.ensemble = null;
+      } else {
+        player.options.instruments = null;
+        player.options.ensemble = null;
+      }
+      player.options.audio.algorithm = currentAlgorithm;
+      player._resolveInstruments();
+
+      // Update each instance without stopping playback
+      player.instances.forEach(function(inst) {
+        inst.opts.audio = Object.assign({}, player.options.audio);
+        if (player.options.audio._instruments) {
+          inst.opts.audio._instruments = player.options.audio._instruments;
+        }
+        // Re-analyze so next play uses new settings
+        inst.currentScore = null;
+        inst.currentMeta = null;
+        player._prepareAnalysis(inst);
+      });
+
+      updateGeneratedCode();
+    }
+
     function applyInstrument(name) {
       currentEnsemble = null;
       currentInstrument = (name === 'none') ? null : name;
@@ -1371,7 +1404,7 @@ securePlayer.<span class="fn">init</span>();
         p.classList.remove('active');
       });
 
-      initPlayer();
+      hotSwapSettings();
     }
 
     function applyEnsemble(name) {
@@ -1385,7 +1418,7 @@ securePlayer.<span class="fn">init</span>();
         p.classList.toggle('active', p.dataset.ensemble === name);
       });
 
-      initPlayer();
+      hotSwapSettings();
     }
 
     document.querySelectorAll('#instrument-grid .mixer-pill').forEach(function(p) {
@@ -1408,7 +1441,7 @@ securePlayer.<span class="fn">init</span>();
       document.querySelectorAll('#algorithm-grid .mixer-pill').forEach(function(p) {
         p.classList.toggle('active', p.dataset.algorithm === name);
       });
-      initPlayer();
+      hotSwapSettings();
     }
 
     document.querySelectorAll('#algorithm-grid .mixer-pill').forEach(function(p) {
