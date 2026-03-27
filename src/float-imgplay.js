@@ -313,6 +313,22 @@ export class FloatImgPlay {
       return;
     }
 
+    // MidiEngine: fetch/parse MIDI before play
+    if (inst.engine instanceof MidiEngine && inst.meta?.midi && !inst.currentScore?.notes) {
+      try {
+        let parsed;
+        if (inst.meta.midi.data) {
+          parsed = MidiEngine.parseBase64(inst.meta.midi.data);
+        } else if (inst.meta.midi.url) {
+          parsed = await MidiEngine.fetchAndParse(inst.meta.midi.url);
+        }
+        if (parsed) inst.currentScore = parsed;
+      } catch (err) {
+        console.warn("[FloatImgPlay] MIDI parse failed:", err);
+        return;
+      }
+    }
+
     // AudioEngine: fetch and decode audio buffer before play
     if (inst.engine instanceof AudioEngine && inst.meta?.audio?.url && !inst.currentScore?.audioBuffer) {
       try {
