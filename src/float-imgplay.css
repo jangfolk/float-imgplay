@@ -17,3 +17,29 @@
 .float-imgplay--ready .float-imgplay-play {
   opacity: 1;
 }
+
+.float-imgplay-volume input[type="range"] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: slider-vertical;
+  -webkit-appearance: slider-vertical;
+}
+
+.float-imgplay-settings-popup {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.float-imgplay-settings-popup::-webkit-scrollbar {
+  width: 4px;
+}
+
+.float-imgplay-settings-popup::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+}
+
+.float-imgplay-speed input[type="range"],
+.float-imgplay-settings-popup input[type="range"] {
+  accent-color: #6c5ce7;
+}
