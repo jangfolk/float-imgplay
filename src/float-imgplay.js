@@ -1,19 +1,31 @@
 /*!
- * FloatImgPlay v1.0.0
+ * FloatImgPlay v2.0.0
  * Image-to-sound player. Scans pixel data and generates rule-based music via Web Audio API.
- * class-based / drop-in usage
+ * Modular architecture with Engine interface and Mode Router.
  */
+
+import { mergeDeep, clone, throttle, fileNameFromUrl, extractCssUrl } from "./utils/helpers.js";
+import { ImageEngine } from "./engines/image-engine.js";
+import { MidiEngine } from "./engines/midi-engine.js";
+import { AudioEngine } from "./engines/audio-engine.js";
+import { MetaParser } from "./parsers/meta-parser.js";
 
 export class FloatImgPlay {
   constructor(options = {}) {
-    this.options = this._mergeDeep(this._defaults(), options);
+    this.options = mergeDeep(this._defaults(), options);
     this.instances = new Map();
     this.audioCtx = null;
     this.globalUnlocked = false;
 
+    this.engines = {
+      midi: new MidiEngine(),
+      audio: new AudioEngine(),
+      image: new ImageEngine()
+    };
+
     this._boundUnlock = this._unlockAudio.bind(this);
     this._boundOnVisibilityChange = this._onDocumentVisibilityChange.bind(this);
-    this._boundTick = this._throttle(this._tickVisibility.bind(this), 120);
+    this._boundTick = throttle(this._tickVisibility.bind(this), 120);
   }
 
   init() {
@@ -39,22 +51,26 @@ export class FloatImgPlay {
   register(el, perElementOptions = {}) {
     if (!el || this.instances.has(el)) return;
 
-    const opts = this._mergeDeep(this._clone(this.options), perElementOptions);
+    const opts = mergeDeep(clone(this.options), perElementOptions);
     const source = this._resolveSource(el);
     if (!source) return;
+
+    const meta = MetaParser.parse(source);
+    const engine = this._resolveEngine(source, meta);
 
     const inst = {
       el,
       opts,
       source,
+      meta,
+      engine,
       isPlaying: false,
       hasRenderedUI: false,
       isVisibleInViewport: false,
       isActuallyVisible: false,
       isDocVisible: document.visibilityState === "visible",
       pendingAutoplay: false,
-      activeNodes: [],
-      stopTimerIds: [],
+      playHandle: null,
       currentScore: null,
       currentMeta: null,
       observer: null,
@@ -112,10 +128,22 @@ export class FloatImgPlay {
   refresh() {
     this.instances.forEach((inst) => {
       inst.source = this._resolveSource(inst.el) || inst.source;
+      inst.meta = MetaParser.parse(inst.source);
+      inst.engine = this._resolveEngine(inst.source, inst.meta);
       this._prepareAnalysis(inst);
     });
     this._tickVisibility();
   }
+
+  // --- Mode Router ---
+
+  _resolveEngine(source, meta) {
+    if (this.engines.midi.canHandle(source, meta)) return this.engines.midi;
+    if (this.engines.audio.canHandle(source, meta)) return this.engines.audio;
+    return this.engines.image;
+  }
+
+  // --- Defaults ---
 
   _defaults() {
     return {
@@ -171,27 +199,7 @@ export class FloatImgPlay {
     };
   }
 
-  _clone(obj) {
-    return JSON.parse(JSON.stringify(obj));
-  }
-
-  _mergeDeep(target, source) {
-    const out = Array.isArray(target) ? [...target] : { ...target };
-    if (!source || typeof source !== "object") return out;
-
-    Object.keys(source).forEach((key) => {
-      const sv = source[key];
-      const tv = out[key];
-      if (Array.isArray(sv)) {
-        out[key] = [...sv];
-      } else if (sv && typeof sv === "object") {
-        out[key] = this._mergeDeep(tv && typeof tv === "object" ? tv : {}, sv);
-      } else {
-        out[key] = sv;
-      }
-    });
-    return out;
-  }
+  // --- Audio Context ---
 
   _bindGlobalUnlock() {
     ["pointerdown", "touchstart", "click", "keydown"].forEach((evt) => {
@@ -222,43 +230,106 @@ export class FloatImgPlay {
     return this.audioCtx;
   }
 
+  // --- Source Resolution ---
+
   _resolveSource(el) {
     if (!el) return null;
 
     if (el.tagName === "IMG" && el.currentSrc || el.tagName === "IMG" && el.src) {
       const src = el.currentSrc || el.src;
-      return { type: "img", url: src, fileName: this._fileNameFromUrl(src), imgEl: el };
+      return { type: "img", url: src, fileName: fileNameFromUrl(src), imgEl: el };
     }
 
     const childImg = el.querySelector("img");
     if (childImg && (childImg.currentSrc || childImg.src)) {
       const src = childImg.currentSrc || childImg.src;
-      return { type: "img-child", url: src, fileName: this._fileNameFromUrl(src), imgEl: childImg };
+      return { type: "img-child", url: src, fileName: fileNameFromUrl(src), imgEl: childImg };
     }
 
     const bg = getComputedStyle(el).backgroundImage;
-    const url = this._extractCssUrl(bg);
+    const url = extractCssUrl(bg);
     if (url) {
-      return { type: "background", url, fileName: this._fileNameFromUrl(url), imgEl: null };
+      return { type: "background", url, fileName: fileNameFromUrl(url), imgEl: null };
     }
 
     return null;
   }
 
-  _extractCssUrl(bgValue) {
-    if (!bgValue || bgValue === "none") return null;
-    const m = bgValue.match(/url\((['"]?)(.*?)\1\)/i);
-    return m ? m[2] : null;
+  // --- Analysis (delegates to engine) ---
+
+  _prepareAnalysis(inst) {
+    inst.engine.analyze(inst.source, inst.opts.audio).then(({ score, meta }) => {
+      inst.currentScore = score;
+      inst.currentMeta = meta;
+    }).catch((err) => {
+      console.warn("[FloatImgPlay] analyze failed:", err);
+    });
   }
 
-  _fileNameFromUrl(url) {
-    try {
-      const clean = url.split("?")[0].split("#")[0];
-      return clean.substring(clean.lastIndexOf("/") + 1) || "image";
-    } catch {
-      return "image";
+  // --- Play / Stop (delegates to engine) ---
+
+  async _playInstance(inst) {
+    if (!inst.currentScore || !inst.currentMeta) {
+      try {
+        const result = await inst.engine.analyze(inst.source, inst.opts.audio);
+        inst.currentScore = result.score;
+        inst.currentMeta = result.meta;
+      } catch {
+        return;
+      }
+    }
+
+    const ctx = this._ensureAudioContext();
+    if (ctx.state === "suspended") {
+      try { await ctx.resume(); } catch {}
+    }
+
+    if (inst.opts.autoplayWhenVisibleOnly && !this._canPlayNow(inst)) {
+      inst.pendingAutoplay = true;
+      return;
+    }
+
+    this._stopInstance(inst);
+
+    const handle = inst.engine.play(inst.currentScore, ctx, inst.opts.audio);
+    inst.playHandle = handle;
+
+    const timerId = window.setTimeout(() => {
+      inst.isPlaying = false;
+      inst.el.classList.remove(inst.opts.classNames.playing);
+      inst.el.classList.add(inst.opts.classNames.paused);
+      if (inst.ui?.playBtn) this._setPlayBtnContent(inst.ui.playBtn, inst.opts.overlayIcon, inst.opts.overlayPlayText);
+    }, handle.totalDuration * 1000 + 50);
+
+    if (!handle.timers) handle.timers = [];
+    handle.timers.push(timerId);
+
+    inst.isPlaying = true;
+    inst.pendingAutoplay = false;
+    inst.el.classList.add(inst.opts.classNames.playing);
+    inst.el.classList.remove(inst.opts.classNames.paused);
+
+    if (inst.ui?.playBtn) {
+      this._setPauseBtnContent(inst.ui.playBtn);
     }
   }
+
+  _stopInstance(inst) {
+    if (inst.playHandle) {
+      inst.engine.stop(inst.playHandle);
+      inst.playHandle = null;
+    }
+
+    inst.isPlaying = false;
+    inst.el.classList.remove(inst.opts.classNames.playing);
+    inst.el.classList.add(inst.opts.classNames.paused);
+
+    if (inst.ui?.playBtn) {
+      this._setPlayBtnContent(inst.ui.playBtn, inst.opts.overlayIcon, inst.opts.overlayPlayText);
+    }
+  }
+
+  // --- UI ---
 
   _buildUI(inst) {
     if (inst.hasRenderedUI) return;
@@ -357,9 +428,6 @@ export class FloatImgPlay {
     inst.hasRenderedUI = true;
   }
 
-  // Sets play button content using safe DOM methods.
-  // overlayIcon and overlayPlayText are developer-configured options
-  // (defaults to Unicode characters), not user-supplied input.
   _setPlayBtnContent(btn, icon, playText) {
     while (btn.firstChild) btn.removeChild(btn.firstChild);
     const iconSpan = document.createElement("span");
@@ -379,6 +447,8 @@ export class FloatImgPlay {
     iconSpan.textContent = "\u275A\u275A";
     btn.appendChild(iconSpan);
   }
+
+  // --- Events ---
 
   _bindInstanceEvents(inst) {
     inst._onPlayClick = (e) => {
@@ -411,6 +481,8 @@ export class FloatImgPlay {
     inst.el.addEventListener("click", inst._onElClick);
   }
 
+  // --- Visibility ---
+
   _setupIntersectionObserver(inst) {
     if (!("IntersectionObserver" in window)) {
       inst.isVisibleInViewport = true;
@@ -427,260 +499,6 @@ export class FloatImgPlay {
     });
 
     inst.observer.observe(inst.el);
-  }
-
-  _prepareAnalysis(inst) {
-    this._analyzeSource(inst).then(({ score, meta }) => {
-      inst.currentScore = score;
-      inst.currentMeta = meta;
-    }).catch((err) => {
-      console.warn("[FloatImgPlay] analyze failed:", err);
-    });
-  }
-
-  async _analyzeSource(inst) {
-    const img = await this._loadImage(inst.source.url);
-    const { score, meta } = this._analyzeImage(img, inst.source.fileName, inst.opts.audio);
-    return { score, meta };
-  }
-
-  _loadImage(url) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = url;
-    });
-  }
-
-  _analyzeImage(img, fileName, audioOpts) {
-    const maxSize = 64;
-    let w = img.width;
-    let h = img.height;
-
-    if (w > h) {
-      h = Math.max(1, Math.round(h * (maxSize / w)));
-      w = maxSize;
-    } else {
-      w = Math.max(1, Math.round(w * (maxSize / h)));
-      h = maxSize;
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0, w, h);
-
-    const imageData = ctx.getImageData(0, 0, w, h);
-    const data = imageData.data;
-    const avg = this._averageRGB(data);
-
-    const scale = this._getScale(audioOpts.scaleMode, avg);
-    const rootMidi = audioOpts.rootMode === "fixed"
-      ? audioOpts.fixedRootMidi
-      : this._charToKey((fileName?.[0] || "c").toLowerCase());
-
-    const rows = (audioOpts.sampleRows || [0.25, 0.5, 0.75]).map(v => Math.max(0, Math.min(h - 1, Math.floor(h * v))));
-    const step = Math.max(1, Math.floor(w / Math.max(1, audioOpts.sampleColumns)));
-    const notes = [];
-
-    for (let x = 0; x < w; x += step) {
-      let rr = 0, gg = 0, bb = 0;
-
-      for (const y of rows) {
-        const idx = (y * w + x) * 4;
-        rr += data[idx];
-        gg += data[idx + 1];
-        bb += data[idx + 2];
-      }
-
-      rr /= rows.length;
-      gg /= rows.length;
-      bb /= rows.length;
-
-      const brightness = (rr + gg + bb) / 3;
-      const saturation = Math.max(rr, gg, bb) - Math.min(rr, gg, bb);
-      const contrastish = Math.abs(rr - bb);
-
-      const scaleIndex = Math.floor((brightness / 255) * (scale.length - 1));
-      const octaveShift = contrastish > audioOpts.octaveContrastThreshold ? audioOpts.octaveShiftSemitones : 0;
-      const midi = rootMidi + scale[scaleIndex] + octaveShift + audioOpts.pitchShiftSemitones;
-
-      let duration = audioOpts.neutralDuration;
-      if (bb > rr && bb > gg) duration = audioOpts.blueDuration;
-      else if (rr > bb && rr > gg) duration = audioOpts.brightDuration;
-
-      const velocity = this._clamp(0.08 + (saturation / 255) * 0.22, 0.08, 0.36);
-      const isRest = brightness < audioOpts.restThreshold;
-
-      notes.push({
-        midi,
-        freq: this._midiToFreq(midi),
-        durationSeconds: this._beatsToSeconds(audioOpts.noteDurationBeats, audioOpts.tempo) * (duration / audioOpts.neutralDuration),
-        velocity,
-        isRest
-      });
-    }
-
-    return {
-      meta: {
-        fileName,
-        avg,
-        scale,
-        rootMidi
-      },
-      score: notes
-    };
-  }
-
-  _averageRGB(data) {
-    let r = 0, g = 0, b = 0;
-    const total = data.length / 4;
-    for (let i = 0; i < data.length; i += 4) {
-      r += data[i];
-      g += data[i + 1];
-      b += data[i + 2];
-    }
-    return { r: r / total, g: g / total, b: b / total };
-  }
-
-  _getScale(mode, avg) {
-    if (mode === "major") return [0, 2, 4, 5, 7, 9, 11, 12];
-    if (mode === "minor") return [0, 2, 3, 5, 7, 8, 10, 12];
-    if (mode === "pentatonic") return [0, 3, 5, 7, 10, 12];
-
-    if (avg.r > avg.b + 20) return [0, 2, 4, 5, 7, 9, 11, 12];
-    if (avg.b > avg.r + 20) return [0, 2, 3, 5, 7, 8, 10, 12];
-    return [0, 3, 5, 7, 10, 12];
-  }
-
-  _charToKey(letter) {
-    const map = {
-      a: 60, b: 62, c: 64, d: 65, e: 67, f: 69, g: 71,
-      h: 60, i: 62, j: 64, k: 65, l: 67, m: 69, n: 71,
-      o: 60, p: 62, q: 63, r: 65, s: 67, t: 68, u: 70,
-      v: 72, w: 61, x: 63, y: 66, z: 68
-    };
-    return map[letter] ?? 60;
-  }
-
-  _beatsToSeconds(beats, tempo) {
-    return (60 / tempo) * beats;
-  }
-
-  _midiToFreq(midi) {
-    return 440 * Math.pow(2, (midi - 69) / 12);
-  }
-
-  _clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
-  }
-
-  async _playInstance(inst) {
-    if (!inst.currentScore || !inst.currentMeta) {
-      await this._prepareAnalysis(inst);
-      if (!inst.currentScore) return;
-    }
-
-    const ctx = this._ensureAudioContext();
-    if (ctx.state === "suspended") {
-      try { await ctx.resume(); } catch {}
-    }
-
-    if (inst.opts.autoplayWhenVisibleOnly && !this._canPlayNow(inst)) {
-      inst.pendingAutoplay = true;
-      return;
-    }
-
-    this._stopInstance(inst);
-
-    const now = ctx.currentTime + 0.03;
-    let t = now;
-    const nodes = [];
-    const timers = [];
-
-    inst.currentScore.forEach((note) => {
-      const totalVol = inst.opts.audio.masterVolume;
-      const waveType = inst.opts.audio.waveform;
-      const attack = inst.opts.audio.attack;
-      const release = inst.opts.audio.release;
-      const filterBaseHz = inst.opts.audio.filterBaseHz;
-      const filterVelocityAmount = inst.opts.audio.filterVelocityAmount;
-      const filterType = inst.opts.audio.filterType;
-
-      if (!note.isRest) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const filter = ctx.createBiquadFilter();
-
-        osc.type = waveType;
-        osc.frequency.setValueAtTime(note.freq, t);
-
-        filter.type = filterType;
-        filter.frequency.setValueAtTime(filterBaseHz + note.velocity * filterVelocityAmount, t);
-
-        gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, note.velocity * totalVol), t + attack);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(attack + 0.01, note.durationSeconds));
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.start(t);
-        osc.stop(t + note.durationSeconds + release);
-
-        nodes.push(osc, gain, filter);
-      }
-
-      t += note.durationSeconds + 0.02;
-    });
-
-    const totalDuration = Math.max(0, t - now);
-    const timerId = window.setTimeout(() => {
-      inst.isPlaying = false;
-      inst.el.classList.remove(inst.opts.classNames.playing);
-      inst.el.classList.add(inst.opts.classNames.paused);
-      if (inst.ui?.playBtn) this._setPlayBtnContent(inst.ui.playBtn, inst.opts.overlayIcon, inst.opts.overlayPlayText);
-    }, totalDuration * 1000 + 50);
-
-    timers.push(timerId);
-    inst.activeNodes = nodes;
-    inst.stopTimerIds = timers;
-    inst.isPlaying = true;
-    inst.pendingAutoplay = false;
-    inst.el.classList.add(inst.opts.classNames.playing);
-    inst.el.classList.remove(inst.opts.classNames.paused);
-
-    if (inst.ui?.playBtn) {
-      this._setPauseBtnContent(inst.ui.playBtn);
-    }
-  }
-
-  _stopInstance(inst) {
-    inst.stopTimerIds.forEach((id) => clearTimeout(id));
-    inst.stopTimerIds = [];
-
-    inst.activeNodes.forEach((node) => {
-      try {
-        if (typeof node.stop === "function") node.stop(0);
-      } catch {}
-      try {
-        if (typeof node.disconnect === "function") node.disconnect();
-      } catch {}
-    });
-
-    inst.activeNodes = [];
-    inst.isPlaying = false;
-
-    inst.el.classList.remove(inst.opts.classNames.playing);
-    inst.el.classList.add(inst.opts.classNames.paused);
-
-    if (inst.ui?.playBtn) {
-      this._setPlayBtnContent(inst.ui.playBtn, inst.opts.overlayIcon, inst.opts.overlayPlayText);
-    }
   }
 
   _onDocumentVisibilityChange() {
@@ -762,6 +580,8 @@ export class FloatImgPlay {
     return (visibleHits / total) >= 0.4;
   }
 
+  // --- Instance lookup ---
+
   _getInstance(target) {
     if (!target) return null;
     if (this.instances.has(target)) return this.instances.get(target);
@@ -770,29 +590,6 @@ export class FloatImgPlay {
       return el ? this.instances.get(el) : null;
     }
     return null;
-  }
-
-  _throttle(fn, wait) {
-    let last = 0;
-    let timeout = null;
-    let lastArgs = null;
-
-    return (...args) => {
-      const now = Date.now();
-      lastArgs = args;
-
-      const invoke = () => {
-        last = now;
-        timeout = null;
-        fn(...lastArgs);
-      };
-
-      if (now - last >= wait) {
-        invoke();
-      } else if (!timeout) {
-        timeout = setTimeout(invoke, wait - (now - last));
-      }
-    };
   }
 }
 
