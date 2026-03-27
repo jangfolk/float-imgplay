@@ -1,0 +1,19 @@
+.float-imgplay {
+  position: relative;
+  overflow: hidden;
+}
+
+.float-imgplay img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.float-imgplay--playing .float-imgplay-play {
+  opacity: 0.85;
+}
+
+.float-imgplay--paused .float-imgplay-play,
+.float-imgplay--ready .float-imgplay-play {
+  opacity: 1;
+}
